@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "gujinsuo.py", line 137, in ?
+    sign(username_array[i], password_array[i])
+  File "gujinsuo.py", line 43, in sign
+    randcode = recognizer.recognize('captcha.jpg', 'pics_train')
+  File "/search/zhangchao/captcha/crawler/gujinsuo/recognizer.py", line 21, in recognize
+    captcha = recognize_block_array(block_array, dir_train_pics)
+  File "/search/zhangchao/captcha/crawler/gujinsuo/recognizer.py", line 30, in recognize_block_array
+    recognized_character = recognize_one_character(block_array[i], train_pic_dict)
+  File "/search/zhangchao/captcha/crawler/gujinsuo/recognizer.py", line 49, in recognize_one_character
+    distance = get_distance(block, character_pic)
+  File "/search/zhangchao/captcha/crawler/gujinsuo/recognizer.py", line 63, in get_distance
+    return levenshtein(block_strlist, character_pic_strlist)
+  File "/search/zhangchao/captcha/crawler/gujinsuo/recognizer.py", line 93, in levenshtein
+    distance_matrix[i][j] = min(insertion,deletion,substitution)  
+KeyboardInterrupt
