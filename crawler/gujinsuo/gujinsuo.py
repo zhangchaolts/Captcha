@@ -6,11 +6,7 @@ import urllib2
 import cookielib
 import re
 import time,datetime
-
-#sys.path.append("/search/zhangchao/captcha/deal_pics/deal_gujinsuo/")
 import recognizer
-
-FW_LOG = open("result.txt", "w")
 
 def sign(username, password):
 
@@ -21,8 +17,8 @@ def sign(username, password):
 	# 安装opener,此后调用urlopen()时都会使用安装过的opener对象
 	urllib2.install_opener(opener)
 
-	print "用户 " + username + " 进行中..."
-	print "开始登陆..."
+	#print "用户 " + username + " 进行中..."
+	#print "开始登陆..."
 
 	is_logined = False
 	try_times = 0
@@ -71,58 +67,65 @@ def sign(username, password):
 		if login_anwser:
 			login_info = login_anwser.group(1)
 			if login_info.find("您已成功登录本系统!") != False and login_info.find("验证码输入错误!") != False and login_info.find("请输入验证码!") != False:
-				print login_info + "\n"
-				return
+				#print login_info + "\n"
+				return "登录失败！"
 
 		homepage_url = "https://www.gujinsuo.com.cn/member/main.html";
 		homepage_html = urllib2.urlopen(homepage_url).read().decode('utf8').encode('gb18030')
 		#print homepage_html
 
 		if homepage_html.find('安全退出') == -1:
-			print "第" + str(try_times) +"次识别验证码错误，登录失败..."
+			#print "第" + str(try_times) +"次识别验证码错误，登录失败..."
 			continue
 		else:
-			print "登录成功!"
+			#print "登录成功!"
 			is_logined = True
 			break
 
 	if is_logined == False:
-		print "尝试20次都登陆失败，程序无能为力了，大侠还是手动签到吧~\n"
-		FW_LOG.write(username + "\n")
-		return
+		#print "尝试20次都登陆失败，程序无能为力了，大侠还是手动签到吧~\n"
+		return "登录失败：尝试20次都登陆失败！"
 
-	print "开始签到..." 
+	#print "开始签到..." 
 
 	# Step3:签到
 	sign_url = "https://www.gujinsuo.com.cn/spread/sign?_=" + str(int(time.mktime(datetime.datetime.now().timetuple()))) + "000"
 	sign_request = urllib2.Request(sign_url)
 	sign_response = opener.open(sign_request).read()
 
-	sign_info = ""
-	sign_anwser = re.search('"message" : "(.*?)",', sign_response)
-	if sign_anwser:
-		sign_info = sign_anwser.group(1).decode("utf8").encode("gbk")
-		print sign_info + "\n"
-	else:
-		print "今日已经签到过!\n"
+	result1 = ""
 
+	gainPopularity = ""
+	sign_anwser = re.search('"message" : "您已成功签到,系统送您(.*?)元的红包",', sign_response)
+	if sign_anwser:
+		gainPopularity = sign_anwser.group(1)
+		result1 = "今日签到获得" + gainPopularity + "元红包。"
+	else:
+		result1 = "今日已经签到过！"
+
+	# Step4
+	home_url = "https://www.gujinsuo.com.cn/spread/mywefares?start=0&limit=10&_=" + str(int(time.mktime(datetime.datetime.now().timetuple()))) + "000"
+	home_html = urllib2.urlopen(home_url).read()
+
+	result2 = ""
+	totalPopularity = ""
+	home_anwser = re.search('"unused" : (.*?),', home_html)
+	if home_anwser:
+		totalPopularity = home_anwser.group(1)
+		result2 = "总红包为" + totalPopularity + "。"
+
+	result = result1 + result2
+	return result
 
 if __name__ == '__main__':
 
 	reload(sys)
 	sys.setdefaultencoding("gbk")
 
-	timestamp_now_date = time.mktime(datetime.datetime.now().timetuple())
-	timestamp_expired_date = time.mktime(time.strptime("2015-12-01 00:00:00", '%Y-%m-%d %H:%M:%S'))
-	if timestamp_now_date >= timestamp_expired_date:
-		print "程序过期，请重新下载"
-		time.sleep(3)
-		sys.exit(0)
-
 	username_array = []
 	password_array = []
 
-	for line in file("gujinsuo.txt"):
+	for line in file("固金所账号密码.txt"):
 		line = line.strip()
 		parts = line.split(" ")
 		if len(parts) == 2:
@@ -131,10 +134,7 @@ if __name__ == '__main__':
 
 	print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
 
-	FW_LOG.write("%s 登陆失败的账号如下：\n" % datetime.datetime.now().strftime("%Y-%m-%d"))
-
 	for i in range(len(username_array)):
-		sign(username_array[i], password_array[i])
+		result = sign(username_array[i], password_array[i])
+		print username_array[i] + ":" + result + "\n"
  
-	print "\n程序执行结束，窗口即将关闭！"
-	time.sleep(2)
