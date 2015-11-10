@@ -31,12 +31,12 @@ def sign(username, password):
 		url = "http://weixin.dtd365.com/index.php/home/account/login.html"
 		html = urllib2.urlopen(url).read()
 
-		fw = open('captcha.jpg', 'wb+')
+		fw = open('captcha_dtjr.jpg', 'wb+')
 		content = urllib2.urlopen('http://wxticket.dtd365.com/index.php/home/index/getvcode.html').read()
 		fw.write(content)
 		fw.close()
 
-		randcode = recognizer_dtjr.recognizer.recognize('captcha.jpg', 'pics_train_dtjr')
+		randcode = recognizer_dtjr.recognizer.recognize('captcha_dtjr.jpg', 'pics_train_dtjr')
 		print "randcode:" + randcode
 
 		# Step2:µÇÂ¼
