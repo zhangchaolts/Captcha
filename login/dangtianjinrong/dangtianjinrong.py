@@ -6,7 +6,7 @@ import urllib2
 import cookielib
 import re
 import time,datetime
-import recognizer
+import recognizer_dtjr.recognizer
 
 def sign(username, password):
 
@@ -36,7 +36,7 @@ def sign(username, password):
 		fw.write(content)
 		fw.close()
 
-		randcode = recognizer.recognize('captcha.jpg', 'pics_train')
+		randcode = recognizer_dtjr.recognizer.recognize('captcha.jpg', 'pics_train_dtjr')
 		print "randcode:" + randcode
 
 		# Step2:µÇÂ¼
