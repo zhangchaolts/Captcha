@@ -83,6 +83,7 @@ def sign(username, password):
 	# Step3:签到
 
 	result1 = ""
+	result3 = ""
 
 	status_url = "http://weixin.dtd365.com/index.php/home/activity/showsign.html"
 	status_html = urllib2.urlopen(status_url).read().decode('utf8').encode('gb18030')
@@ -114,6 +115,11 @@ def sign(username, password):
 		sign_request = urllib2.Request(sign_url, sign_post_data, sign_headers)
 		sign_response = opener.open(sign_request).read().decode('utf8').encode('gb18030')
 
+		hongbao_anwser = re.search(',"hongbao":"(.*?)"}', sign_response)
+		if hongbao_anwser:
+			hongbao = hongbao_anwser.group(1)
+			result3 = "获得" + hongbao +"元红包。"
+
 		status_html = urllib2.urlopen(status_url).read().decode('utf8').encode('gb18030')
 
 		status_anwser = re.search('<input type="hidden" id="showsign_status" value="(.*?)" />', status_html)
@@ -128,7 +134,7 @@ def sign(username, password):
 		days = total_anwser.group(1)
 		result2 = "已签到" + days + "天。"
 
-	return result1 + result2
+	return result1 + result2 + result3
 
 if __name__ == '__main__':
 
