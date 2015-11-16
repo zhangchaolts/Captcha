@@ -91,12 +91,12 @@ def sign(username, password):
 	# Step3:签到
 	sign_url = "https://www.gujinsuo.com.cn/spread/sign?_=" + str(int(time.mktime(datetime.datetime.now().timetuple()))) + "000"
 	sign_request = urllib2.Request(sign_url)
-	sign_response = opener.open(sign_request).read()
+	sign_response = opener.open(sign_request).read().decode('utf8').encode('gb18030')
 
 	result1 = ""
 
 	gainPopularity = ""
-	sign_anwser = re.search('"message" : "您已成功签到,系统送您(.*?)元的红包",', sign_response)
+	sign_anwser = re.search('您已成功签到,系统送您(.*?)元的红包', sign_response)
 	if sign_anwser:
 		gainPopularity = sign_anwser.group(1)
 		result1 = "今日签到获得" + gainPopularity + "元红包。"
