@@ -31,6 +31,6 @@ if __name__ == '__main__':
 	reload(sys)
 	sys.setdefaultencoding("gbk")
 
-	for i in range(1000):
+	for i in range(10):
 		filename = "../pics/gujinsuo/pics_orignal/" + str("%04d" % i) + ".jpg"
 		get("https://www.gujinsuo.com.cn/auth/random?_=1445347060681", filename)

@@ -7,13 +7,8 @@ import cookielib
 import re
 import time,datetime
 import recognizer_gjs.recognizer
-import string
-import multiprocessing
 
-manager = multiprocessing.Manager()
-status_list = manager.list()
-
-def sign(line_ptr, username, password):
+def sign(username, password):
 
 	# 获取Cookiejar对象（存在本机的cookie消息）
 	cj = cookielib.CookieJar()
@@ -22,7 +17,8 @@ def sign(line_ptr, username, password):
 	# 安装opener,此后调用urlopen()时都会使用安装过的opener对象
 	urllib2.install_opener(opener)
 
-	print username + " start ..."
+	#print "用户 " + username + " 进行中..."
+	#print "开始登陆..."
 
 	is_logined = False
 	try_times = 0
@@ -35,13 +31,13 @@ def sign(line_ptr, username, password):
 		url = "https://www.gujinsuo.com.cn/login.html"
 		html = urllib2.urlopen(url).read()
 
-		fw = open('pics_captcha_gjs/' + str(line_ptr) + '.jpg', 'wb+')
+		fw = open('captcha_gjs.jpg', 'wb+')
 		content = urllib2.urlopen('https://www.gujinsuo.com.cn/auth/random?_=' + str(int(time.mktime(datetime.datetime.now().timetuple()))) + '000').read()
 		fw.write(content)
 		fw.close()
 
-		randcode = recognizer_gjs.recognizer.recognize('pics_captcha_gjs/' + str(line_ptr) + '.jpg', 'pics_train_gjs')
-		print "(" + str(line_ptr) + "," + str(try_times) + ") " + "randcode:" + randcode
+		randcode = recognizer_gjs.recognizer.recognize('captcha_gjs.jpg', 'pics_train_gjs')
+		#print "randcode:" + randcode
 
 		# Step2:登录
 		login_url = "https://www.gujinsuo.com.cn/login"
@@ -50,7 +46,6 @@ def sign(line_ptr, username, password):
 						"password": password, \
 						"randcode": randcode \
 					}
-		print login_data
 
 		login_post_data = urllib.urlencode(login_data) 
 
@@ -73,8 +68,7 @@ def sign(line_ptr, username, password):
 			login_info = login_anwser.group(1)
 			if login_info.find("您已成功登录本系统!") != False and login_info.find("验证码输入错误!") != False and login_info.find("请输入验证码!") != False:
 				#print login_info + "\n"
-				result = "登录失败！"
-				status_list.append(str(line_ptr) + " " + result)
+				return "登录失败！"
 
 		homepage_url = "https://www.gujinsuo.com.cn/member/main.html";
 		homepage_html = urllib2.urlopen(homepage_url).read().decode('utf8').encode('gb18030')
@@ -90,8 +84,7 @@ def sign(line_ptr, username, password):
 
 	if is_logined == False:
 		#print "尝试20次都登陆失败，程序无能为力了，大侠还是手动签到吧~\n"
-		result = "登录失败：尝试20次都登陆失败！"
-		status_list.append(str(line_ptr) + " " + result)
+		return "登录失败：尝试20次都登陆失败！"
 
 	#print "开始签到..." 
 
@@ -122,45 +115,26 @@ def sign(line_ptr, username, password):
 		result2 = "总红包为" + totalPopularity + "。"
 
 	result = result1 + result2
-	print username + " " + result
-	status_list.append(str(line_ptr) + " " + result)
-
-def change_list(status_list):
-	my_status_list = [None] * len(status_list)
-	for status in status_list:
-		parts = status.split(" ")
-		if len(parts) == 2:
-			ptr = string.atoi(parts[0])
-			my_status_list[ptr] = parts[1]
-	return my_status_list
-
-def sign_all(account_list):
-	jobs = []
-	for i in xrange(len(account_list)):
-		job = multiprocessing.Process(target=sign, args=(i, account_list[i][0], account_list[i][1]))
-		jobs.append(job)
-		job.start()
-	for job in jobs:
-		job.join()
-	return change_list(status_list)
+	return result
 
 if __name__ == '__main__':
 
 	reload(sys)
 	sys.setdefaultencoding("gbk")
 
-	print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
+	username_array = []
+	password_array = []
 
-	account_list = []
 	for line in file("固金所账号密码.txt"):
 		line = line.strip()
 		parts = line.split(" ")
 		if len(parts) == 2:
-			account_list.append([parts[0], parts[1]])
+			username_array.append(parts[0])
+			password_array.append(parts[1])
 
-	my_status_list = sign_all(account_list)
+	print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
 
-	for status in my_status_list:
-		print status.encode('gbk')
-
-
+	for i in range(len(username_array)):
+		result = sign(username_array[i], password_array[i])
+		print username_array[i] + ":" + result + "\n"
+ 
