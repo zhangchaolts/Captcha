@@ -10,10 +10,7 @@ import recognizer_dtjr.recognizer
 import string
 import multiprocessing
 
-manager = multiprocessing.Manager()
-status_list = manager.list()
-
-def sign(line_ptr, username, password):
+def sign(queue, line_ptr, username, password):
 
 	# 获取Cookiejar对象（存在本机的cookie消息）
 	cj = cookielib.CookieJar()
@@ -82,7 +79,8 @@ def sign(line_ptr, username, password):
 	if is_logined == False:
 		#print "尝试20次都登陆失败，程序无能为力了，大侠还是手动签到吧~\n"
 		result = "登录失败：尝试20次都登陆失败！"
-		status_list.append(str(line_ptr) + " " + result)
+		queue.put(str(line_ptr) + " " + result)
+		return
 
 	# Step3:签到
 
@@ -140,45 +138,48 @@ def sign(line_ptr, username, password):
 
 	result =  result1 + result2 + result3
 	print username + " " + result
-	status_list.append(str(line_ptr) + " " + result)
-	
+	queue.put(str(line_ptr) + " " + result)
+	return
 
-def change_list(status_list):
-	my_status_list = [None] * len(status_list)
-	for status in status_list:
-		parts = status.split(" ")
-		if len(parts) == 2:
-			ptr = string.atoi(parts[0])
-			my_status_list[ptr] = parts[1]
-	return my_status_list
+
+
+def get_status_list(queue):
+    status_list = [None] * queue.qsize()
+    while queue.empty() != True:
+        parts = queue.get().split(" ")
+        if len(parts) == 2:
+            ptr = string.atoi(parts[0])
+            status_list[ptr] = parts[1]
+    return status_list
 
 
 def sign_all(account_list):
-	jobs = []
-	for i in xrange(len(account_list)):
-		job = multiprocessing.Process(target=sign, args=(i, account_list[i][0], account_list[i][1]))
-		jobs.append(job)
-		job.start()
-	for job in jobs:
-		job.join()
-	return change_list(status_list)
+    queue = multiprocessing.Queue()
+    jobs = []
+    for i in xrange(len(account_list)):
+        job = multiprocessing.Process(target=sign, args=(queue, i, account_list[i][0], account_list[i][1]))
+        jobs.append(job)
+        job.start()
+    for job in jobs:
+        job.join()
+    return get_status_list(queue)
 
 
 if __name__ == '__main__':
 
-	reload(sys)
-	sys.setdefaultencoding("gbk")
+    reload(sys)
+    sys.setdefaultencoding("gbk")
 
-	print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
+    print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
+    
+    account_list = []
+    for line in file("当天金融账号密码.txt"):
+        line = line.strip()
+        parts = line.split(" ")
+        if len(parts) == 2:
+            account_list.append([parts[0], parts[1]])
 
-	account_list = []
-	for line in file("当天金融账号密码.txt"):
-		line = line.strip()
-		parts = line.split(" ")
-		if len(parts) == 2:
-			account_list.append([parts[0], parts[1]])
+    status_list = sign_all(account_list)
 
-	my_status_list = sign_all(account_list)
-
-	for status in my_status_list:
-		print status.encode('gbk')
+    for status in status_list:
+        print status.encode('gbk')
