@@ -17,10 +17,13 @@ def get(url, filename):
 	# 安装opener,此后调用urlopen()时都会使用安装过的opener对象
 	urllib2.install_opener(opener)
 
-	# Step1:获取token
-	content = urllib2.urlopen(url).read()
+	url = "http://www.gujinsuo.com.cn/login.html"
+	html = urllib2.urlopen(url).read()
 
-	fw = open(filename,'w+')
+	print 'ok1'
+	content = urllib2.urlopen(url).read()
+	print 'ok2'
+	fw = open(filename,'wb+')
 	fw.write(content)
 	fw.close()
 
@@ -33,4 +36,6 @@ if __name__ == '__main__':
 
 	for i in range(10):
 		filename = "../pics/gujinsuo/pics_orignal/" + str("%04d" % i) + ".jpg"
-		get("https://www.gujinsuo.com.cn/auth/random?_=1445347060681", filename)
+		filename = '0000.jpg'
+		print filename
+		get("http://www.gujinsuo.com.cn/auth/random?_=1445347060681", filename)

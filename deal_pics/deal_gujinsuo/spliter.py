@@ -18,7 +18,7 @@ def split(pic, block_array):
 
 
 if __name__ == '__main__':
-	pic = Image.open('../../pics/gujinsuo/pics_orignal/0001.jpg')
+	pic = Image.open('../../pics/gujinsuo/pics_orignal/0000.jpg')
 	pic_preprocessed = preprocessor.preprocess(pic)
 	block_array = []
 	split(pic_preprocessed, block_array)
