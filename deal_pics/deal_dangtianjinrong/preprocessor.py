@@ -7,7 +7,7 @@ import Queue
 BLACK_COLOR = 0
 WHITE_COLOR = 255
 THRESHOLD_COLOR = 140
-THRESHOLD_CHARACTER_PIXEL_NUMBER = 2
+THRESHOLD_CHARACTER_PIXEL_NUMBER = 5
 
 def print_pic(pic):
 	(width, height) = pic.size

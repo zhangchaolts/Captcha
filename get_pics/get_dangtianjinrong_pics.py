@@ -31,6 +31,6 @@ if __name__ == '__main__':
 	reload(sys)
 	sys.setdefaultencoding("gbk")
 
-	for i in range(1000):
+	for i in range(100):
 		filename = "../pics/dangtianjinrong/pics_orignal/" + str("%04d" % i) + ".jpg"
 		get("http://weixin.dtd365.com/index.php/home/index/getvcode.html", filename)

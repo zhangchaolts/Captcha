@@ -8,8 +8,9 @@ import re
 import time,datetime
 import recognizer_dtjr.recognizer
 import string
+import multiprocessing
 
-def sign(username, password):
+def sign(queue, line_ptr, username, password):
 
 	# 获取Cookiejar对象（存在本机的cookie消息）
 	cj = cookielib.CookieJar()
@@ -23,7 +24,7 @@ def sign(username, password):
 	is_logined = False
 	try_times = 0
 
-	while try_times < 30:
+	while try_times < 20:
 
 		try_times += 1
 
@@ -31,18 +32,13 @@ def sign(username, password):
 		url = "http://weixin.dtd365.com/index.php/home/account/login.html"
 		html = urllib2.urlopen(url).read()
 
-		fw = open('pics_captcha_dtjr/0.jpg', 'wb+')
-		#fw = open('pics_captcha_dtjr/000' + str(try_times-1) + '.jpg', 'wb+')
-		content = urllib2.urlopen('http://weixin.dtd365.com/index.php/home/index/getvcode.html').read()
+		fw = open('pics_captcha_dtjr/' + str(line_ptr) + '.jpg', 'wb+')
+		content = urllib2.urlopen('http://wxticket.dtd365.com/index.php/home/index/getvcode.html').read()
 		fw.write(content)
 		fw.close()
 
-		randcode = recognizer_dtjr.recognizer.recognize('pics_captcha_dtjr/0.jpg', 'pics_train_dtjr')
-		#randcode = recognizer_dtjr.recognizer.recognize('pics_captcha_dtjr/000' + str(try_times-1) + '.jpg', 'pics_train_dtjr')
-		#print "(" + str(try_times) + ") " + "randcode:" + randcode
-
-		if randcode == "":
-			continue
+		randcode = recognizer_dtjr.recognizer.recognize('pics_captcha_dtjr/' + str(line_ptr) + '.jpg', 'pics_train_dtjr')
+		print "(" + str(line_ptr) + "," + str(try_times) + ") " + "randcode:" + randcode
 
 		# Step2:登录
 		login_url = "http://weixin.dtd365.com/index.php/home/index/login.html"
@@ -55,24 +51,18 @@ def sign(username, password):
 
 		login_post_data = urllib.urlencode(login_data) 
 
-		login_headers = {	"Accept" : "application/json, text/javascript, */*; q=0.01", \
-							#"Accept-Encoding" : "gzip, deflate", \
-							#"Accept-Language" :" zh-CN,zh;q=0.8", \
-							#"Connection" : "keep-alive", \
-							#"Content-Length" : "52", \
-							"Content-Type" : "application/x-www-form-urlencoded; charset=UTF-8", \
+		login_headers = {	"Referer" : "http://weixin.dtd365.com/index.php/home/account/login.html", \
 							"Host" : "weixin.dtd365.com", \
+							"Accept" : "*/*", \
 							"Origin" : "http://weixin.dtd365.com", \
-							"Referer" : "http://weixin.dtd365.com/index.php/home/account/login.html", \
 							"Content-Type" : "application/x-www-form-urlencoded; charset=UTF-8", \
-							"User-Agent" : "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.69 Safari/537.36", \
-							"X-Requested-With" : "XMLHttpRequest" \
+							"X-Requested-With" : "XMLHttpRequest", \
+							"User-Agent" : "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.69 Safari/537.36" \
 						}
 
 		login_request = urllib2.Request(login_url, login_post_data, login_headers)
 
 		login_response = opener.open(login_request).read().decode('utf8').encode('gb18030')
-		#print login_response
 
 		homepage_url = "http://weixin.dtd365.com/index.php/home/account/index.html";
 		homepage_html = urllib2.urlopen(homepage_url).read().decode('utf8').encode('gb18030')
@@ -87,8 +77,10 @@ def sign(username, password):
 			break
 
 	if is_logined == False:
-		result = "登录失败：尝试30次都登陆失败！"
-		return result
+		#print "尝试20次都登陆失败，程序无能为力了，大侠还是手动签到吧~\n"
+		result = "登录失败：尝试20次都登陆失败！"
+		queue.put(str(line_ptr) + " " + result)
+		return
 
 	# Step3:签到
 
@@ -145,28 +137,49 @@ def sign(username, password):
 		result2 = "已签到" + days + "天。"
 
 	result =  result1 + result2 + result3
-	return result
+	print username + " " + result
+	queue.put(str(line_ptr) + " " + result)
+	return
+
+
+
+def get_status_list(queue):
+    status_list = [None] * queue.qsize()
+    while queue.empty() != True:
+        parts = queue.get().split(" ")
+        if len(parts) == 2:
+            ptr = string.atoi(parts[0])
+            status_list[ptr] = parts[1]
+    return status_list
+
+
+def sign_all(account_list):
+    queue = multiprocessing.Queue()
+    jobs = []
+    for i in xrange(len(account_list)):
+        job = multiprocessing.Process(target=sign, args=(queue, i, account_list[i][0], account_list[i][1]))
+        jobs.append(job)
+        job.start()
+    for job in jobs:
+        job.join()
+    return get_status_list(queue)
 
 
 if __name__ == '__main__':
 
-	reload(sys)
-	sys.setdefaultencoding("gbk")
+    reload(sys)
+    sys.setdefaultencoding("gbk")
 
-	username_array = []
-	password_array = []
+    print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
+    
+    account_list = []
+    for line in file("当天金融账号密码.txt"):
+        line = line.strip()
+        parts = line.split(" ")
+        if len(parts) == 2:
+            account_list.append([parts[0], parts[1]])
 
-	for line in file("当天金融账号密码.txt"):
-		line = line.strip()
-		parts = line.split(" ")
-		if len(parts) == 2:
-			username_array.append(parts[0])
-			password_array.append(parts[1])
+    status_list = sign_all(account_list)
 
-	print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
- 
-	for i in range(len(username_array)):
-		result = sign(username_array[i], password_array[i])
-		print username_array[i] + ":" + result
-
-
+    for status in status_list:
+        print status.encode('gbk')

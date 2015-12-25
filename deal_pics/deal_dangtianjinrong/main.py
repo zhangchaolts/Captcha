@@ -12,7 +12,7 @@ if __name__ == '__main__':
 	dir_path_step = '../../pics/dangtianjinrong/pics_step'
 	dir_path_train = '../../pics/dangtianjinrong/pics_train/'
 
-	deal_number = 20
+	deal_number = 10
 
 	pic_step1 = 1
 	pic_step2 = 2

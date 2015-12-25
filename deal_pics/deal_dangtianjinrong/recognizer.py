@@ -8,7 +8,7 @@ import string
 import preprocessor
 import spliter
 
-THRESHOLD_BLOCK_NUMBER = 3
+THRESHOLD_BLOCK_NUMBER = 5
 
 def recognize(pic, dir_train_pics):
 	pic = Image.open(pic)
@@ -41,7 +41,7 @@ def recognize_block_array(block_array, dir_train_pics):
 		if i == 2:
 			digit1_str = recognized_character
 	if digit0_str != '' and digit1_str != '' and notation_str != '' and digit0_str != 'A' and digit0_str != 'M' and digit1_str != 'A' and digit1_str != 'M':
-		if notation_str == 'J':
+		if notation_str == 'A':
 			recognized_str = str(string.atoi(digit0_str) + string.atoi(digit1_str))
 		if notation_str == 'M':
 			recognized_str = str(string.atoi(digit0_str) * string.atoi(digit1_str))
