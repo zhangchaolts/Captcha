@@ -8,9 +8,8 @@ import re
 import time,datetime
 import recognizer_gjs.recognizer
 import string
-import multiprocessing
 
-def sign(queue, line_ptr, username, password):
+def sign(username, password):
 
 	# 获取Cookiejar对象（存在本机的cookie消息）
 	cj = cookielib.CookieJar()
@@ -32,13 +31,13 @@ def sign(queue, line_ptr, username, password):
 		url = "https://www.gujinsuo.com.cn/login.html"
 		html = urllib2.urlopen(url).read()
 
-		fw = open('pics_captcha_gjs/' + str(line_ptr) + '.jpg', 'wb+')
+		fw = open('pics_captcha_gjs/0.jpg', 'wb+')
 		content = urllib2.urlopen('https://www.gujinsuo.com.cn/auth/random?_=' + str(int(time.mktime(datetime.datetime.now().timetuple()))) + '000').read()
 		fw.write(content)
 		fw.close()
 
-		randcode = recognizer_gjs.recognizer.recognize('pics_captcha_gjs/' + str(line_ptr) + '.jpg', 'pics_train_gjs')
-		print "(" + str(line_ptr) + "," + str(try_times) + ") " + "randcode:" + randcode
+		randcode = recognizer_gjs.recognizer.recognize('pics_captcha_gjs/0.jpg', 'pics_train_gjs')
+		print "(" + str(try_times) + ") " + "randcode:" + randcode
 
 		# Step2:登录
 		login_url = "https://www.gujinsuo.com.cn/login"
@@ -63,34 +62,32 @@ def sign(queue, line_ptr, username, password):
 		login_request = urllib2.Request(login_url, login_post_data, login_headers)
 
 		login_response = opener.open(login_request).read().decode('utf8').encode('gb18030')
+		print login_response
 
 		login_info = ""
 		login_anwser = re.search('"message" : "(.*?)",', login_response)
 		if login_anwser:
 			login_info = login_anwser.group(1)
-			if login_info.find("您已成功登录本系统!") != False and login_info.find("验证码输入错误!") != False and login_info.find("请输入验证码!") != False:
-				#print login_info + "\n"
+			if login_info.find("您已成功登录本系统!") == -1 and login_info.find("验证码输入错误!") == -1 and login_info.find("请输入验证码!") == -1:
 				result = "登录失败！"
-				queue.put(str(line_ptr) + " " + result)
-				return
+				return result
 
 		homepage_url = "https://www.gujinsuo.com.cn/member/main.html";
 		homepage_html = urllib2.urlopen(homepage_url).read().decode('utf8').encode('gb18030')
 		#print homepage_html
 
-		if homepage_html.find('安全退出') == -1:
-			#print "第" + str(try_times) +"次识别验证码错误，登录失败..."
+		if homepage_html.find('退出') == -1:
+			print "第" + str(try_times) +"次识别验证码错误，登录失败..."
 			continue
 		else:
-			#print "登录成功!"
+			print "登录成功!"
 			is_logined = True
 			break
 
 	if is_logined == False:
 		#print "尝试20次都登陆失败，程序无能为力了，大侠还是手动签到吧~\n"
 		result = "登录失败：尝试20次都登陆失败！"
-		queue.put(str(line_ptr) + " " + result)
-		return
+		return result
 	
 	#print "开始签到..." 
 
@@ -121,48 +118,26 @@ def sign(queue, line_ptr, username, password):
 		result2 = "总红包为" + totalPopularity + "。"
 
 	result = result1 + result2
-	print username + " " + result
-	queue.put(str(line_ptr) + " " + result)
-	return
-
-
-def get_status_list(queue):
-    status_list = [None] * queue.qsize()
-    while queue.empty() != True:
-        parts = queue.get().split(" ")
-        if len(parts) == 2:
-            ptr = string.atoi(parts[0])
-            status_list[ptr] = parts[1]
-    return status_list
-
-
-def sign_all(account_list):
-    queue = multiprocessing.Queue()
-    jobs = []
-    for i in xrange(len(account_list)):
-        job = multiprocessing.Process(target=sign, args=(queue, i, account_list[i][0], account_list[i][1]))
-        jobs.append(job)
-        job.start()
-    for job in jobs:
-        job.join()
-    return get_status_list(queue)
+	return result
 
 
 if __name__ == '__main__':
 
-    reload(sys)
-    sys.setdefaultencoding("gbk")
+	reload(sys)
+	sys.setdefaultencoding("gbk")
 
-    print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
-    
-    account_list = []
-    for line in file("固金所账号密码.txt"):
-        line = line.strip()
-        parts = line.split(" ")
-        if len(parts) == 2:
-            account_list.append([parts[0], parts[1]])
+	username_array = []
+	password_array = []
 
-    status_list = sign_all(account_list)
+	for line in file("固金所账号密码.txt"):
+		line = line.strip()
+		parts = line.split(" ")
+		if len(parts) == 2:
+			username_array.append(parts[0])
+			password_array.append(parts[1])
 
-    for status in status_list:
-        print status.encode('gbk')
+	print "\n【" + datetime.datetime.now().strftime("%Y-%m-%d") + "】";
+ 
+	for i in range(len(username_array)):
+		result = sign(username_array[i], password_array[i])
+		print username_array[i] + ":" + result
