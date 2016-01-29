@@ -28,12 +28,25 @@ def sign(username, password):
 		try_times += 1
 
 		# Step1:识别验证码
-		url = "https://www.gujinsuo.com.cn/login.html"
-		html = urllib2.urlopen(url).read()
+		first_headers = {	"Accept" : "*/*", \
+							"Cache-Control" :"max-age=0", \
+							"Connection" : "keep-alive", \
+							"Host" : "www.gujinsuo.com.cn", \
+							"Upgrade-Insecure-Requests" : "1", \
+							"User-Agent" : "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.69 Safari/537.36" \
+						} 
+
+		first_url = "https://www.gujinsuo.com.cn/login.html"
+		first_request = urllib2.Request(first_url, headers=first_headers)
+		first_response = opener.open(first_request).read().decode('utf8').encode('gb18030')
+		#print first_response
 
 		fw = open('pics_captcha_gjs/0.jpg', 'wb+')
-		content = urllib2.urlopen('https://www.gujinsuo.com.cn/auth/random?_=' + str(int(time.mktime(datetime.datetime.now().timetuple()))) + '000').read()
-		fw.write(content)
+
+		captcha_url = 'https://www.gujinsuo.com.cn/auth/random?_=' + str(int(time.mktime(datetime.datetime.now().timetuple()))) + '000'
+		captcha_request = urllib2.Request(captcha_url, headers=first_headers)
+		captcha_response = opener.open(captcha_request).read()
+		fw.write(captcha_response)
 		fw.close()
 
 		randcode = recognizer_gjs.recognizer.recognize('pics_captcha_gjs/0.jpg', 'pics_train_gjs')
@@ -62,7 +75,7 @@ def sign(username, password):
 		login_request = urllib2.Request(login_url, login_post_data, login_headers)
 
 		login_response = opener.open(login_request).read().decode('utf8').encode('gb18030')
-		print login_response
+		#print login_response
 
 		login_info = ""
 		login_anwser = re.search('"message" : "(.*?)",', login_response)
@@ -72,8 +85,15 @@ def sign(username, password):
 				result = "登录失败！"
 				return result
 
-		homepage_url = "https://www.gujinsuo.com.cn/member/main.html";
-		homepage_html = urllib2.urlopen(homepage_url).read().decode('utf8').encode('gb18030')
+		homepage_headers = {	"Referer" : "https://www.gujinsuo.com.cn/login.xhtml", \
+								"Host" : "www.gujinsuo.com.cn", \
+								"Accept" : "*/*", \
+								"User-Agent" : "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.69 Safari/537.36" \
+							}
+
+		homepage_url = "https://www.gujinsuo.com.cn/member/main.html"
+		homepage_request = urllib2.Request(homepage_url, headers = homepage_headers)
+		homepage_html = opener.open(homepage_request).read().decode('utf8').encode('gb18030')
 		#print homepage_html
 
 		if homepage_html.find('退出') == -1:
@@ -93,7 +113,7 @@ def sign(username, password):
 
 	# Step3:签到
 	sign_url = "https://www.gujinsuo.com.cn/spread/sign?_=" + str(int(time.mktime(datetime.datetime.now().timetuple()))) + "000"
-	sign_request = urllib2.Request(sign_url)
+	sign_request = urllib2.Request(sign_url, headers = homepage_headers)
 	sign_response = opener.open(sign_request).read().decode('utf8').encode('gb18030')
 
 	result1 = ""
@@ -107,12 +127,20 @@ def sign(username, password):
 		result1 = "今日已经签到过！"
 
 	# Step4
-	home_url = "https://www.gujinsuo.com.cn/spread/mywefares?start=0&limit=10&_=" + str(int(time.mktime(datetime.datetime.now().timetuple()))) + "000"
-	home_html = urllib2.urlopen(home_url).read()
+	home_headers = {	"Referer" : "https://www.gujinsuo.com.cn/customer/main.xhtml", \
+						"Host" : "www.gujinsuo.com.cn", \
+						"Accept" : "*/*", \
+						"X-Requested-With" : "XMLHttpRequest", \
+						"User-Agent" : "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.69 Safari/537.36" \
+					}
+	home_url = "https://www.gujinsuo.com.cn/customer/sign/getSignDays?_=" + str(int(time.mktime(datetime.datetime.now().timetuple()))) + "000"
+	home_request = urllib2.Request(home_url, headers = home_headers)
+	home_html = opener.open(home_request).read().decode('utf8').encode('gb18030')
+	#print home_html
 
 	result2 = ""
 	totalPopularity = ""
-	home_anwser = re.search('"unused" : (.*?),', home_html)
+	home_anwser = re.search('"totalSignAmount" : (.*?),', home_html)
 	if home_anwser:
 		totalPopularity = home_anwser.group(1)
 		result2 = "总红包为" + totalPopularity + "。"
